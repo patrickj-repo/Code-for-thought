@@ -1,0 +1,389 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Travel Itinerary (Offline)</title>
+<meta name="theme-color" content="#4f46e5" />
+<style>
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: var(--bg); color: var(--fg); }
+:root {
+  --bg:#eef2ff; --fg:#111827; --muted:#6b7280; --card:#ffffff; --subtle:#f8fafc;
+  --primary:#4f46e5; --primary-2:#7c3aed; --ok:#10b981; --warn:#f59e0b; --danger:#ef4444;
+  --border:#e5e7eb; --soft:#f3f4f6; --shadow: 0 10px 24px rgba(0,0,0,.08);
+}
+body.dark {
+  --bg:#0b1020; --fg:#e5e7eb; --muted:#a3a3b2; --card:#0f162e; --subtle:#0c1328;
+  --primary:#8b93ff; --primary-2:#b388ff; --ok:#36d399; --warn:#fbbf24; --danger:#f87171;
+  --border:#1f2a44; --soft:#0b1329; --shadow: 0 10px 24px rgba(0,0,0,.35);
+}
+.app { min-height: 100%; display: grid; grid-template-rows: auto 1fr auto; }
+.header { position: sticky; top: 0; z-index: 20; background: var(--card); border-bottom: 1px solid var(--border); display:flex; align-items:center; justify-content:space-between; gap: 8px; padding: 12px 16px; }
+.header .title { font-weight: 700; font-size: 18px; display:flex; align-items:center; gap:8px; }
+.header .controls { display:flex; align-items:center; gap:10px; }
+.badge { font-size: 11px; color: var(--fg); opacity:.7; background: var(--soft); border:1px solid var(--border); padding:4px 8px; border-radius: 999px; }
+.content { padding: 12px 12px 90px; max-width: 880px; margin: 0 auto; width: 100%; }
+.tabs { position: sticky; bottom: 0; z-index: 30; background: var(--card); border-top:1px solid var(--border); display:flex; align-items:center; justify-content:space-around; gap: 4px; padding: 6px; }
+.tab-btn { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; padding: 8px 0; border-radius: 10px; color: var(--muted); }
+.tab-btn.active { color: var(--primary); background: color-mix(in oklab, var(--primary) 12%, transparent); }
+.tab-ico { width: 22px; height: 22px; }
+.card { background: var(--card); border:1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); }
+.pad { padding: 12px; }
+.section-title { font-weight: 700; font-size: 14px; margin-bottom: 8px; }
+.muted { color: var(--muted); font-size: 12px; }
+.btn { border:1px solid var(--border); background: var(--soft); color: var(--fg); padding: 8px 10px; border-radius: 10px; font-weight: 600; }
+.btn.primary { background: linear-gradient(135deg, var(--primary), var(--primary-2)); border-color: transparent; color: #fff; }
+.btn.danger { background: color-mix(in oklab, var(--danger) 15%, transparent); color: var(--danger); }
+.btn.link { background: transparent; border:none; color: var(--primary); padding: 0; }
+.row { display:flex; align-items:center; gap:8px; }
+.space { height: 8px; }
+.input, select, textarea { width: 100%; border:1px solid var(--border); background: var(--subtle); color: var(--fg); padding: 8px 10px; border-radius: 10px; outline:none; font-size: 14px; }
+textarea { resize: vertical; min-height: 64px; }
+.day { overflow:hidden; }
+.day-head { background: linear-gradient(135deg, var(--primary), var(--primary-2)); color:#fff; padding: 10px; display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.day-info { display:flex; align-items:center; gap:10px; min-width: 0; }
+.day-title { font-weight:700; font-size: 16px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.day-date { font-size:12px; opacity:.9; }
+.day-actions { display:flex; align-items:center; gap:6px; }
+.tag { font-size: 11px; opacity:.9; padding:3px 6px; background:rgba(255,255,255,.2); border-radius: 999px; }
+.entry { border-left:4px solid var(--border); background: var(--subtle); border-radius: 10px; padding:10px; }
+.entry-row { display:flex; flex-wrap:wrap; gap:8px; }
+.timepill { min-width:54px; text-align:center; background: var(--card); border:1px solid var(--border); border-radius: 999px; padding:5px 8px; font-weight:700; }
+.categorypill { font-size:12px; border-radius: 999px; padding:4px 8px; border:1px solid var(--border); background: var(--card); }
+.cat-food{ color:#ea580c; } .cat-transport{ color:#3b82f6; } .cat-activities{ color:#059669; } .cat-accommodation{ color:#8b5cf6; } .cat-shopping{ color:#ec4899; } .cat-other{ color:#6b7280; }
+.fab { position: fixed; right: 14px; bottom: 90px; z-index: 40; width: 56px; height: 56px; border-radius: 999px; display:flex; align-items:center; justify-content:center; background: linear-gradient(135deg, var(--primary), var(--primary-2)); color:#fff; border:none; box-shadow: var(--shadow); font-size: 28px; line-height: 0; }
+.sheet { position: fixed; left:0; right:0; bottom:0; z-index: 45; background: var(--card); border-top-left-radius: 16px; border-top-right-radius: 16px; border:1px solid var(--border); max-height: 85vh; overflow:auto; box-shadow: var(--shadow); }
+.backdrop { position: fixed; inset:0; background: rgba(0,0,0,.35); z-index: 44; }
+.small { font-size: 12px; }
+.hr { height: 1px; background: var(--border); margin: 10px 0; }
+.helper { position: fixed; inset: 0; z-index: 50; display:none; align-items:center; justify-content:center; padding: 16px; background: rgba(0,0,0,.6); }
+.helper .box { background: var(--card); color: var(--fg); border:1px solid var(--border); border-radius: 12px; padding: 12px; max-width: 520px; width: 100%; }
+.helper.show { display:flex; }
+@media print { .header, .tabs, .fab, .helper, .btn-install { display:none !important; } body { background:#fff; color:#000; } .card { box-shadow:none; border-color:#ddd; } .content { padding: 0; } .day { page-break-inside: avoid; margin-bottom: 10px; } .entry { page-break-inside: avoid; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="title">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M2.5 19l19-7-7-2-2-7-4 9-6 7z"/></svg>
+      <span id="appTitle">Travel Itinerary</span>
+      <span id="tripDaysBadge" class="badge">0 day</span>
+    </div>
+    <div class="controls">
+      <button id="toggleTheme" class="btn" title="Dark mode">🌓</button>
+      <button id="btnInstall" class="btn btn-install" title="Add to Home Screen">📲</button>
+      <button id="btnPrint" class="btn" title="Export to PDF / Print">🖨️</button>
+    </div>
+  </div>
+  <div class="content" id="content"></div>
+  <div class="tabs" id="tabs">
+    <button class="tab-btn active" data-tab="days">
+      <svg class="tab-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M7 2h2v3H7V2zm8 0h2v3h-2V2zM3 8h18v13H3V8zm2 2v9h14v-9H5z"/></svg>
+      <div class="small">Days</div>
+    </button>
+    <button class="tab-btn" data-tab="summary">
+      <svg class="tab-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h16v2H4zM4 9h10v2H4zM4 14h16v2H4zM4 19h10v2H4z"/></svg>
+      <div class="small">Summary</div>
+    </button>
+    <button class="tab-btn" data-tab="bookings">
+      <svg class="tab-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h16v12H4zM6 6v8h12V6zM4 18h16v2H4z"/></svg>
+      <div class="small">Bookings</div>
+    </button>
+    <button class="tab-btn" data-tab="places">
+      <svg class="tab-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5z"/></svg>
+      <div class="small">Places</div>
+    </button>
+  </div>
+  <button class="fab" id="fab" title="Add">＋</button>
+  <div class="backdrop" id="sheetBg" style="display:none"></div>
+  <div class="sheet card" id="sheet" style="display:none">
+    <div class="pad">
+      <div class="row" style="justify-content:space-between;">
+        <div class="section-title">Edit Entry</div>
+        <button class="btn" id="sheetClose">Close ✖</button>
+      </div>
+      <div class="space"></div>
+      <div class="row">
+        <div style="flex:1">
+          <div class="small muted">Time</div>
+          <input class="input" id="f_time" type="time" />
+        </div>
+        <div style="flex:1">
+          <div class="small muted">Duration (min)</div>
+          <input class="input" id="f_duration" type="number" min="0" step="5" />
+        </div>
+      </div>
+      <div class="small muted" id="f_end_label" style="margin-top:6px;">End: --:--</div>
+      <div class="space"></div>
+      <div>
+        <div class="small muted">Title</div>
+        <input class="input" id="f_title" placeholder="What is this?" />
+      </div>
+      <div class="space"></div>
+      <div class="row">
+        <div style="flex:1">
+          <div class="small muted">Category</div>
+          <select class="input" id="f_category">
+            <option value="transport">Transport</option>
+            <option value="accommodation">Accommodation</option>
+            <option value="activities">Activities</option>
+            <option value="food">Food</option>
+            <option value="shopping">Shopping</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div style="flex:1">
+          <div class="small muted">Cost</div>
+          <input class="input" id="f_cost" type="number" min="0" step="0.01" placeholder="0.00" />
+        </div>
+      </div>
+      <div class="space"></div>
+      <div>
+        <div class="small muted">Notes</div>
+        <textarea class="input" id="f_notes" placeholder="Add details..."></textarea>
+      </div>
+      <div class="space"></div>
+      <div>
+        <div class="small muted">Map Link</div>
+        <input class="input" id="f_map" placeholder="https://maps.google.com/?q=..." />
+      </div>
+      <div class="hr"></div>
+      <div class="row" style="justify-content:space-between; align-items:center;">
+        <div class="section-title">Attachments</div>
+        <label class="btn primary">
+          📎 Attach
+          <input id="f_attach" type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" style="display:none" />
+        </label>
+      </div>
+      <div id="f_files" class="small muted"></div>
+      <div class="hr"></div>
+      <div class="row" style="justify-content:space-between; flex-wrap:wrap; gap:8px;">
+        <button id="btnDupEntry" class="btn">Duplicate</button>
+        <div style="flex:1"></div>
+        <button id="btnDelEntry" class="btn danger">Delete Entry</button>
+        <button id="btnSaveEntry" class="btn primary">Save</button>
+      </div>
+    </div>
+  </div>
+  <div class="helper" id="installHelper">
+    <div class="box">
+      <div class="row" style="justify-content:space-between; align-items:center;">
+        <div class="section-title">Add to Home Screen</div>
+        <button class="btn" onclick="hideInstall()">Close ✖</button>
+      </div>
+      <div class="muted">
+        For a local file, installation varies by browser.
+        <ol>
+          <li><b>Samsung Internet</b> → Menu → <b>Add page to</b> → <b>Home screen</b>.</li>
+          <li>Or upload this file to a static host (GitHub Pages / Netlify) and open the link in Chrome → <b>Add to Home screen</b>. After install, it runs offline.</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+const LS_KEY_DAYS = 'ti_days_v1';
+const LS_KEY_PLACES = 'ti_places_v1';
+const LS_KEY_TITLE = 'ti_title_v1';
+const LS_KEY_THEME = 'ti_theme_v1';
+const LS_KEY_CHECK = 'ti_checklist_v1';
+const defaultChecklist = [
+  { id:'visa', label:'Visa', done:false },
+  { id:'vacc', label:'Vaccinations / certificates', done:false },
+  { id:'insurance', label:'Travel insurance', done:false },
+  { id:'sim', label:'Local SIM / eSIM', done:false },
+  { id:'fx', label:'Currency / Forex / Cards', done:false },
+  { id:'docs', label:'Passport / IDs / Copies', done:false },
+  { id:'offline', label:'Offline maps / tickets downloaded', done:false },
+  { id:'house', label:'House/Office arrangements', done:false }
+];
+function loadLS(key, fallback) { try { const v = JSON.parse(localStorage.getItem(key)); return v ?? fallback; } catch { return fallback; } }
+function saveLS(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
+let days = loadLS(LS_KEY_DAYS, [
+  { id: 1, date: new Date().toISOString().slice(0,10), title:'Day 1 - Arrival', expanded:true, entries:[
+    { id: 11, time:'09:00', title:'Flight Arrival', notes:'Terminal 3', cost:450, currency:'USD', category:'transport', duration:120, mapLink:'', attachments:[] },
+    { id: 12, time:'12:00', title:'Hotel Check-in', notes:'Grand Plaza Hotel', cost:150, currency:'USD', category:'accommodation', duration:30, mapLink:'', attachments:[] },
+  ]},
+]);
+let places = loadLS(LS_KEY_PLACES, []);
+let tripTitle = loadLS(LS_KEY_TITLE, 'Travel Itinerary');
+let checklist = loadLS(LS_KEY_CHECK, defaultChecklist);
+const DB_NAME = 'itineraryFilesDB';
+const DB_VERSION = 1;
+const STORE = 'files';
+function openDB() { return new Promise((resolve, reject) => { const req = indexedDB.open(DB_NAME, DB_VERSION); req.onupgradeneeded = () => { const db = req.result; if (!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE, { keyPath:'id' }); }; req.onsuccess = () => resolve(req.result); req.onerror = () => reject(req.error); }); }
+async function saveFiles(fileList) { const db = await openDB(); const tx = db.transaction(STORE, 'readwrite'); const store = tx.objectStore(STORE); const saved = []; for (const f of fileList) { const id = Date.now() + Math.random(); await new Promise((res, rej) => { const r = store.put({ id, name:f.name, type:f.type||'application/octet-stream', size:f.size, blob:f }); r.onsuccess = res; r.onerror = () => rej(r.error); }); saved.push({ id, name:f.name, type:f.type||'application/octet-stream', size:f.size }); } tx.oncomplete = () => db.close(); return saved; }
+async function getFileURL(id) { const db = await openDB(); const tx = db.transaction(STORE, 'readonly'); const store = tx.objectStore(STORE); const file = await new Promise((res, rej) => { const r = store.get(id); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); db.close(); if (!file) return null; return URL.createObjectURL(file.blob); }
+async function deleteFile(id) { const db = await openDB(); const tx = db.transaction(STORE, 'readwrite'); const store = tx.objectStore(STORE); await new Promise((res, rej) => { const r = store.delete(id); r.onsuccess = res; r.onerror = () => rej(r.error); }); db.close(); }
+const $ = (sel, ctx=document) => ctx.querySelector(sel);
+const $$ = (sel, ctx=document) => Array.from(ctx.querySelectorAll(sel));
+function fmtMoney(n) { const v = Number(n||0); return v.toFixed(2); }
+function sum(arr) { return arr.reduce((a,b)=>a+Number(b||0),0); }
+function byTime(a,b){ return (a.time||'').localeCompare(b.time||''); }
+function byDate(a,b){ return (a.date||'').localeCompare(b.date||''); }
+function saveAll() { saveLS(LS_KEY_DAYS, days); saveLS(LS_KEY_PLACES, places); saveLS(LS_KEY_TITLE, tripTitle); saveLS(LS_KEY_CHECK, checklist); }
+let activeTab = 'days';
+let editing = { dayId:null, entryId:null };
+function computeEndTime(start, minutes){ if(!start) return '--:--'; const parts = String(start).split(':'); let h = parseInt(parts[0],10), m = parseInt(parts[1],10); if(isNaN(h)||isNaN(m)) return '--:--'; let total = h*60 + m + (Number(minutes)||0); let dayShift = Math.floor(total/1440); total = ((total%1440)+1440)%1440; let eh = Math.floor(total/60), em = total%60; return String(eh).padStart(2,'0')+':'+String(em).padStart(2,'0')+(dayShift?` (+${dayShift}d)`:'' ); }
+function render() { $("#appTitle").textContent = tripTitle; $("#tripDaysBadge").textContent = `${days.length} ${days.length===1?'day':'days'}`; $$(".tab-btn").forEach(b => b.classList.toggle('active', b.dataset.tab===activeTab)); const c = $("#content"); c.innerHTML = ''; if (activeTab==='days') renderDays(c); else if (activeTab==='summary') renderSummary(c); else if (activeTab==='bookings') renderBookings(c); else if (activeTab==='places') renderPlaces(c); $("#fab").style.display = (activeTab==='days' || activeTab==='places') ? 'flex' : 'none'; $("#fab").textContent = '＋'; }
+function catClass(cat){ return { food:'cat-food', transport:'cat-transport', activities:'cat-activities', accommodation:'cat-accommodation', shopping:'cat-shopping', other:'cat-other' }[cat||'other'] || 'cat-other'; }
+function renderDays(parent){ const wrap = document.createElement('div'); const sorted = [...days].sort(byDate); sorted.forEach(day=>{ const dayCard = document.createElement('div'); dayCard.className='card day'; dayCard.innerHTML = `
+      <div class="day-head">
+        <div class="day-info" style="min-width:0;">
+          <button class="btn" data-act="toggle" data-id="${day.id}" title="Toggle">${day.expanded?'▼':'►'}</button>
+          <div style="min-width:0;">
+            <div class="day-title">${escapeHTML(day.title||'Untitled')}</div>
+            <div class="day-date">${escapeHTML(day.date||'')}</div>
+          </div>
+        </div>
+        <div class="day-actions">
+          <span class="tag">Entries: ${day.entries.length}</span>
+          <span class="tag">Total: $${fmtMoney(day.entries.reduce((s,e)=>s+Number(e.cost||0),0))}</span>
+          <button class="btn" data-act="editDay" data-id="${day.id}">✎</button>
+          <button class="btn danger" data-act="delDay" data-id="${day.id}">🗑</button>
+        </div>
+      </div>
+      <div class="pad body" style="${day.expanded?'':'display:none'}">
+        <div class="row" style="gap:6px; flex-wrap:wrap; margin-bottom:8px;">
+          <input class="input" type="date" value="${escapeAttr(day.date||'')}" data-act="updDayDate" data-id="${day.id}" style="max-width: 160px;">
+          <input class="input" type="text" placeholder="Day title" value="${escapeAttr(day.title||'')}" data-act="updDayTitle" data-id="${day.id}">
+          <button class="btn primary" data-act="addEntry" data-id="${day.id}">＋ Add Entry</button>
+        </div>
+        <div class="stack entries"></div>
+      </div>
+    `; const entriesWrap = $(".entries", dayCard); day.entries.sort(byTime).forEach(e=>{ const endLabel = computeEndTime(e.time, e.duration); const row = document.createElement('div'); row.className='entry'; row.innerHTML = `
+          <div class="entry-row">
+            <div class="timepill">${escapeHTML(e.time||'--:--')}</div>
+            <div class="categorypill ${catClass(e.category)}">${escapeHTML((e.category||'other').replace(/^[a-z]/, s=>s.toUpperCase()))}</div>
+            <div style="font-weight:700;">${escapeHTML(e.title||'New Activity')}</div>
+            <div style="margin-left:auto; font-weight:700;">$${fmtMoney(e.cost)}</div>
+          </div>
+          ${e.notes?`<div class="muted" style="margin:6px 0;">${escapeHTML(e.notes)}</div>`:''}
+          <div class="small muted" style="margin:2px 0;">⏱ ${Number(e.duration||0)} min · End ${endLabel} · 📎 ${e.attachments?.length||0} file(s)</div>
+          <div class="row" style="gap:8px; flex-wrap:wrap; margin-top:6px;">
+            ${e.mapLink?`<a class="btn link" target="_blank" rel="noreferrer" href="${escapeAttr(e.mapLink)}">📍 Open Map</a>`:''}
+            <button class="btn" data-act="editEntry" data-day="${day.id}" data-entry="${e.id}">Edit</button>
+            <button class="btn" data-act="dupEntry" data-day="${day.id}" data-entry="${e.id}">Duplicate</button>
+            <button class="btn danger" data-act="delEntry" data-day="${day.id}" data-entry="${e.id}">Delete</button>
+          </div>
+        `; entriesWrap.appendChild(row); }); wrap.appendChild(dayCard); }); parent.appendChild(wrap); wrap.addEventListener('click', onDaysClick); wrap.addEventListener('input', onDaysInput); }
+function onDaysClick(ev){ const el = ev.target.closest('[data-act]'); if(!el) return; const act = el.dataset.act; const id = Number(el.dataset.id); if (act==='toggle') { const d = days.find(x=>x.id===id); if(!d) return; d.expanded=!d.expanded; saveAll(); render(); return; } if (act==='editDay') { const d = days.find(x=>x.id===id); if(!d) return; const t = prompt('Day title:', d.title||'') ?? d.title; if (t!==null) d.title=t; const newDate = prompt('Date (YYYY-MM-DD):', d.date||'') ?? d.date; if (newDate!==null) d.date=newDate; saveAll(); render(); return; } if (act==='delDay') { if (confirm('Delete this day?')) { days = days.filter(x=>x.id!==id); saveAll(); render(); } return; } if (act==='addEntry') { const d = days.find(x=>x.id===id); if(!d) return; d.entries.push({ id: Date.now(), time:'09:00', title:'New Activity', notes:'', cost:0, currency:'USD', category:'other', duration:60, mapLink:'', attachments:[] }); saveAll(); render(); return; } if (act==='editEntry') { openSheet(Number(el.dataset.day), Number(el.dataset.entry)); return; } if (act==='dupEntry') { const dayId = Number(el.dataset.day), entryId = Number(el.dataset.entry); const d = days.find(x=>x.id===dayId); if(!d) return; const src = d.entries.find(e=>e.id===entryId); if(!src) return; const copy = { ...src, id: Date.now(), title: (src.title||'') + ' (copy)' }; // do not duplicate attachments to avoid extra storage
+ copy.attachments = []; d.entries.push(copy); saveAll(); render(); return; } if (act==='delEntry') { const dayId = Number(el.dataset.day), entryId = Number(el.dataset.entry); const d = days.find(x=>x.id===dayId); if(!d) return; if (confirm('Delete this entry?')) { d.entries = d.entries.filter(e=>e.id!==entryId); saveAll(); render(); } return; } }
+function onDaysInput(ev){ const el = ev.target.closest('[data-act]'); if(!el) return; const act = el.dataset.act, id = Number(el.dataset.id), val = el.value; if (act==='updDayDate'){ const d=days.find(x=>x.id===id); if(!d) return; d.date=val; saveAll(); } if (act==='updDayTitle'){ const d=days.find(x=>x.id===id); if(!d) return; d.title=val; saveAll(); } }
+function renderSummary(parent){ const totals = { food:0, transport:0, activities:0, accommodation:0, shopping:0, other:0 }; days.forEach(d => d.entries.forEach(e => totals[e.category||'other'] += Number(e.cost||0))); const tripTotal = Object.values(totals).reduce((a,b)=>a+b,0); const card = document.createElement('div'); card.className='card pad'; card.innerHTML = `
+    <div class="section-title">Trip Overview</div>
+    <div class="row" style="gap:8px; flex-wrap:wrap;">
+      <input class="input" id="titleInput" value="${escapeAttr(tripTitle)}" placeholder="Trip title" />
+      <div class="badge">Days: ${days.length}</div>
+      <div class="badge">Total: $${fmtMoney(tripTotal)}</div>
+    </div>
+    <div class="hr"></div>
+    <div class="section-title">Budget by Category</div>
+    <div class="small muted">Tap categories to see spend</div>
+    <div class="space"></div>
+    <div class="row" style="flex-wrap:wrap; gap:8px;">
+      ${Object.entries(totals).map(([k,v])=>`<div class="btn" style="min-width:120px;">${labelCat(k)}: $${fmtMoney(v)}</div>`).join('')}
+    </div>
+    <div class="hr"></div>
+    <div class="section-title">Pre‑trip Checklist</div>
+    <div id="checklistWrap" class="small"></div>
+    <div class="hr"></div>
+    <div class="row" style="gap:8px; flex-wrap:wrap;">
+      <button class="btn" onclick="resetChecklist()">Reset Checklist</button>
+      <button class="btn" onclick="exportJSON()">Backup (JSON)</button>
+      <button class="btn" onclick="importJSON()">Restore (JSON)</button>
+    </div>
+  `; parent.appendChild(card); $("#titleInput", card).addEventListener('input', e => { tripTitle = e.target.value; saveAll(); $("#appTitle").textContent = tripTitle; }); const cw = $("#checklistWrap", card); cw.innerHTML = ''; checklist.forEach(item=>{ const row = document.createElement('div'); row.className='row'; row.style.cssText = 'justify-content:space-between; background:var(--subtle); border:1px solid var(--border); border-radius:10px; padding:8px; margin:6px 0;'; row.innerHTML = `
+      <label class="row" style="gap:8px;">
+        <input type="checkbox" ${item.done?'checked':''} data-check="${item.id}" />
+        <span>${escapeHTML(item.label)}</span>
+      </label>
+      <button class="btn danger small" onclick="removeChecklist('${item.id}')">Delete</button>
+    `; cw.appendChild(row); }); const addRow = document.createElement('div'); addRow.className='row'; addRow.style.cssText='gap:8px; margin-top:6px;'; addRow.innerHTML = `
+    <input id="newCheck" class="input" placeholder="Add checklist item..." />
+    <button class="btn primary" onclick="addChecklist()">Add</button>
+  `; cw.appendChild(addRow); cw.addEventListener('change', e=>{ const id = e.target.dataset.check; if(!id) return; const it = checklist.find(x=>x.id===id); if(!it) return; it.done = !!e.target.checked; saveAll(); }); }
+function renderBookings(parent){ const cats = ['transport','accommodation','activities']; cats.forEach(cat=>{ const box = document.createElement('div'); box.className='card pad'; const list = []; days.forEach(d => d.entries.forEach(e => { if((e.category||'other')===cat) list.push({d,e}); })); list.sort((a,b)=> (a.d.date||'').localeCompare(b.d.date||'') || (a.e.time||'').localeCompare(b.e.time||'') ); box.innerHTML = `
+      <div class="section-title">${labelCat(cat)}</div>
+      ${list.length ? '' : '<div class="muted">No items yet. Add entries in Days.</div>'}
+      <div class="space"></div>
+      <div class="stack">
+        ${list.map(({d,e})=>`<div class="row" style="gap:8px; align-items:flex-start; background:var(--subtle); border:1px solid var(--border); border-radius:10px; padding:8px;">
+            <div class="badge">${escapeHTML(d.date||'')}</div>
+            <div class="badge">${escapeHTML(e.time||'')}</div>
+            <div style="font-weight:700; flex:1;">${escapeHTML(e.title)}</div>
+            <div>$${fmtMoney(e.cost)}</div>
+            ${e.attachments?.length?`<div class="muted small">📎 ${e.attachments.length}</div>`:''}
+          </div>`).join('')}
+      </div>
+    `; parent.appendChild(box); parent.appendChild(document.createElement('div')).className='space'; }); }
+function renderPlaces(parent){ const box = document.createElement('div'); box.className='card pad'; box.innerHTML = `
+    <div class="section-title">Places Shortlist</div>
+    <div id="placesWrap"></div>
+    <div class="hr"></div>
+    <div class="row" style="gap:8px; flex-wrap:wrap;">
+      <input class="input" id="p_name" placeholder="Place name" />
+      <select class="input" id="p_cat"><option>Monument</option><option>Landmark</option><option>Museum</option><option>Food</option><option>Experience</option><option>Other</option></select>
+      <input class="input" id="p_hours" placeholder="Opening hours" />
+      <input class="input" id="p_time" type="number" min="0" step="0.5" placeholder="Time needed (hrs)" />
+      <input class="input" id="p_fee" type="number" min="0" step="0.01" placeholder="Fee" />
+      <input class="input" id="p_map" placeholder="Map link" />
+      <button class="btn primary" onclick="addPlace()">Add</button>
+    </div>
+  `; parent.appendChild(box); updatePlacesList(); }
+function updatePlacesList(){ const wrap = $("#placesWrap"); if(!wrap) return; wrap.innerHTML = ''; if (!places.length) { const empty = document.createElement('div'); empty.className='muted'; empty.textContent='No places yet. Add some above.'; wrap.appendChild(empty); return; } places.forEach(p=>{ const row = document.createElement('div'); row.className='row'; row.style.cssText='gap:8px; align-items:flex-start; background:var(--subtle); border:1px solid var(--border); border-radius:10px; padding:8px; margin:6px 0;'; row.innerHTML = `
+      <div style="font-weight:700; min-width: 120px;">${escapeHTML(p.name)}</div>
+      <div class="badge">${escapeHTML(p.category||'')}</div>
+      <div class="muted small">⏱ ${p.timeNeeded||0}h</div>
+      <div class="muted small">💵 $${fmtMoney(p.fee||0)}</div>
+      ${p.map ? `<a target="_blank" rel="noreferrer" class="btn link small" href="${escapeAttr(p.map)}">📍 Map</a>` : ''}
+      <button class="btn small" onclick="editPlace(${p.id})">Edit</button>
+      <button class="btn danger small" onclick="delPlace(${p.id})">Delete</button>
+    `; wrap.appendChild(row); }); }
+function resetChecklist(){ checklist = defaultChecklist.map(i=>({...i, done:false})); saveAll(); render(); }
+function addChecklist(){ const inp = $("#newCheck"); const val = (inp.value||'').trim(); if(!val) return; checklist.push({ id: String(Date.now()), label: val, done:false }); inp.value=''; saveAll(); render(); }
+function removeChecklist(id){ checklist = checklist.filter(i=>i.id!==id); saveAll(); render(); }
+function addPlace(){ const name = $("#p_name").value.trim(); if(!name) return alert('Place name required'); const p = { id: Date.now(), name, category: $("#p_cat").value, hours: $("#p_hours").value, timeNeeded: Number($("#p_time").value||0), fee: Number($("#p_fee").value||0), map: $("#p_map").value }; places.push(p); saveAll(); $("#p_name").value=''; $("#p_hours").value=''; $("#p_time").value=''; $("#p_fee").value=''; $("#p_map").value=''; updatePlacesList(); }
+function editPlace(id){ const p = places.find(x=>x.id===id); if(!p) return; const name = prompt('Name:', p.name); if(name===null) return; const cat = prompt('Category:', p.category); if(cat===null) return; const hours = prompt('Opening hours:', p.hours||''); if(hours===null) return; const time = prompt('Time needed (hrs):', p.timeNeeded||0); if(time===null) return; const fee = prompt('Fee:', p.fee||0); if(fee===null) return; const map = prompt('Map link:', p.map||''); if(map===null) return; p.name = name; p.category=cat; p.hours=hours; p.timeNeeded=Number(time); p.fee=Number(fee); p.map=map; saveAll(); updatePlacesList(); }
+function delPlace(id){ if (!confirm('Delete this place?')) return; places = places.filter(x=>x.id!==id); saveAll(); updatePlacesList(); }
+function openSheet(dayId, entryId){ editing = { dayId, entryId }; const d = days.find(x=>x.id===dayId); const e = d?.entries.find(x=>x.id===entryId); if(!e) return; $("#f_time").value = e.time || ''; $("#f_duration").value = e.duration || 0; $("#f_title").value = e.title || ''; $("#f_category").value = e.category || 'other'; $("#f_cost").value = e.cost || 0; $("#f_notes").value = e.notes || ''; $("#f_map").value = e.mapLink || ''; updateEndLabel(); renderFilesList(e.attachments||[]); $("#sheetBg").style.display='block'; $("#sheet").style.display='block'; }
+function closeSheet(){ $("#sheetBg").style.display='none'; $("#sheet").style.display='none'; editing={dayId:null, entryId:null}; }
+function renderFilesList(files){ const box = $("#f_files"); box.innerHTML = ''; if (!files.length){ box.textContent = 'No files attached.'; return; } files.forEach(att=>{ const row = document.createElement('div'); row.className='row'; row.style.cssText='justify-content:space-between; gap:8px; border:1px solid var(--border); background:var(--subtle); padding:6px 8px; border-radius:8px; margin:6px 0;'; row.innerHTML = `
+      <div class="small" style="max-width:70%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">📎 ${escapeHTML(att.name)} <span class="muted">(${(att.type||'').split('/')[1]||'file'})</span></div>
+      <div class="row" style="gap:6px;">
+        <button class="btn small" data-open="${att.id}">Open</button>
+        <button class="btn danger small" data-del="${att.id}">Delete</button>
+      </div>
+    `; box.appendChild(row); }); }
+$("#sheetClose").onclick = closeSheet; $("#sheetBg").onclick = closeSheet;
+$("#btnSaveEntry").onclick = ()=>{ const d = days.find(x=>x.id===editing.dayId); if(!d) return; const e = d.entries.find(x=>x.id===editing.entryId); if(!e) return; e.time = $("#f_time").value; e.duration = Number($("#f_duration").value||0); e.title = $("#f_title").value; e.category = $("#f_category").value; e.cost = Number($("#f_cost").value||0); e.notes = $("#f_notes").value; e.mapLink = $("#f_map").value; saveAll(); closeSheet(); render(); };
+$("#btnDelEntry").onclick = ()=>{ const d = days.find(x=>x.id===editing.dayId); if(!d) return; d.entries = d.entries.filter(x=>x.id!==editing.entryId); saveAll(); closeSheet(); render(); };
+$("#btnDupEntry").onclick = ()=>{ const d = days.find(x=>x.id===editing.dayId); if(!d) return; const src = d.entries.find(x=>x.id===editing.entryId); if(!src) return; const copy = { ...src, id: Date.now(), title: (src.title||'') + ' (copy)' }; copy.attachments = []; d.entries.push(copy); saveAll(); closeSheet(); render(); };
+$("#f_attach").onchange = async (e)=>{ const files = Array.from(e.target.files||[]); if(!files.length) return; const d = days.find(x=>x.id===editing.dayId); if(!d) return; const e1 = d.entries.find(x=>x.id===editing.entryId); if(!e1) return; const savedMeta = await saveFiles(files); e1.attachments = [...(e1.attachments||[]), ...savedMeta]; saveAll(); renderFilesList(e1.attachments); e.target.value=''; };
+$("#f_files").addEventListener('click', async (ev)=>{ const openId = ev.target?.dataset?.open; const delId = ev.target?.dataset?.del; if (openId){ const url = await getFileURL(Number(openId)); if (url) window.open(url, '_blank', 'noopener,noreferrer'); } if (delId){ await deleteFile(Number(delId)); const d = days.find(x=>x.id===editing.dayId); if(!d) return; const e = d.entries.find(x=>x.id===editing.entryId); if(!e) return; e.attachments = (e.attachments||[]).filter(a=>a.id!==Number(delId)); saveAll(); renderFilesList(e.attachments); } });
+function updateEndLabel(){ const start = $("#f_time").value; const mins = Number($("#f_duration").value||0); $("#f_end_label").textContent = 'End: ' + computeEndTime(start, mins); }
+$("#f_time").addEventListener('input', updateEndLabel);
+$("#f_duration").addEventListener('input', updateEndLabel);
+$("#tabs").addEventListener('click', (e)=>{ const b = e.target.closest('.tab-btn'); if(!b) return; activeTab = b.dataset.tab; render(); });
+$("#fab").onclick = ()=>{ if (activeTab==='days'){ days.push({ id: Date.now(), date: new Date().toISOString().slice(0,10), title:`Day ${days.length+1}`, expanded:true, entries:[] }); saveAll(); render(); } else if (activeTab==='places'){ places.push({ id: Date.now(), name:'New Place', category:'Other', hours:'', timeNeeded:0, fee:0, map:'' }); saveAll(); updatePlacesList(); } };
+function applyTheme() { const pref = loadLS(LS_KEY_THEME, null); if (pref === 'dark') document.body.classList.add('dark'); else if (pref === 'light') document.body.classList.remove('dark'); else { const mq = window.matchMedia('(prefers-color-scheme: dark)'); document.body.classList.toggle('dark', mq.matches); } }
+applyTheme();
+$("#toggleTheme").onclick = ()=>{ const isDark = document.body.classList.toggle('dark'); saveLS(LS_KEY_THEME, isDark ? 'dark' : 'light'); };
+$("#btnPrint").onclick = ()=> window.print();
+function showInstall(){ $("#installHelper").classList.add('show'); }
+function hideInstall(){ $("#installHelper").classList.remove('show'); }
+$("#btnInstall").onclick = showInstall;
+$("#appTitle").addEventListener('click', ()=>{ const t = prompt('Trip title:', tripTitle); if (t!==null) { tripTitle=t; saveAll(); render(); } });
+function labelCat(k){ return { food:'Food', transport:'Transport', activities:'Activities', accommodation:'Accommodation', shopping:'Shopping', other:'Other' }[k] || 'Other'; }
+function escapeHTML(s){ return String(s||'').replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',''':'&#39;' }[m])); }
+function escapeAttr(s){ return escapeHTML(s).replace(/"/g,'&quot;'); }
+function exportJSON(){ const data = { days, places, checklist, title: tripTitle }; const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'itinerary-backup.json'; a.click(); URL.revokeObjectURL(url); }
+function importJSON(){ const inp = document.createElement('input'); inp.type='file'; inp.accept='application/json'; inp.onchange = async ()=>{ const f = inp.files[0]; if(!f) return; const text = await f.text(); try { const data = JSON.parse(text); if(data.days) days = data.days; if(data.places) places = data.places; if(data.checklist) checklist = data.checklist; if(data.title) tripTitle = data.title; saveAll(); render(); } catch(e){ alert('Invalid JSON'); } } ; inp.click(); }
+render();
+</script>
+</body>
+</html>
